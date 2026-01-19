@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TG Clicker Pro</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-top: 10px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 0 #000;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .stats {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .score-label {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .score {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #FFD700;
+            text-shadow: 3px 3px 0 #000;
+            line-height: 1;
+        }
+
+        .clicker {
+            position: relative;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .click-button {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, #FF416C, #FF4B2B);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 15px 35px rgba(255, 65, 108, 0.4);
+            transition: all 0.1s;
+            user-select: none;
+            animation: pulse 2s infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .click-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(255, 65, 108, 0.6);
+        }
+
+        .click-button::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .click-button:active::after {
+            opacity: 1;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 65, 108, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0); }
+        }
+
+        .click-power {
+            font-size: 1.2rem;
+            margin-top: 15px;
+            color: #FFD700;
+        }
+
+        .boosters {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .booster {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .booster:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .booster.active {
+            border-color: #FFD700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .booster-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .booster-name {
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #FFD700;
+        }
+
+        .booster-cost {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .leaderboard {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .leaderboard h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #FFD700;
+            font-size: 1.8rem;
+            font-weight: 900;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .leaderboard-item.current-user {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid #FFD700;
+        }
+
+        .leaderboard-item:hover {
+            transform: translateX(5px);
+        }
+
+        .rank {
+            font-weight: 900;
+            font-size: 1.5rem;
+            color: #FFD700;
+            min-width: 40px;
+        }
+
+        .player-info {
+            flex-grow: 1;
+        }
+
+        .player-name {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .player-score {
+            font-size: 1.3rem;
+            color: #FFD700;
+            font-weight: 900;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #FF416C;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transform: translateX(120%);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .click-button {
+                width: 180px;
+                height: 180px;
+                font-size: 1.5rem;
+            }
+            
+            .score {
+                font-size: 3rem;
+            }
+            
+            .boosters {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>TG CLICKER</h1>
+            <p>Кликай быстрее всех! 🚀</p>
+        </div>
+
+        <div class="stats">
+            <div class="score-container">
+                <div class="score-label">ТВОЙ СЧЕТ</div>
+                <div class="score" id="score">0</div>
+            </div>
+            
+            <div class="clicker">
+                <button class="click-button" id="clickButton">
+                    ЖМИ!<br>
+                    <span style="font-size: 1rem">💰</span>
+                </button>
+                <div class="click-power">Сила клика: <span id="clickPower">1</span></div>
+            </div>
+        </div>
+
+        <div class="boosters" id="boosters">
+            <!-- Boosters will be added here -->
+        </div>
+
+        <div class="leaderboard">
+            <h2>🏆 ТОП ИГРОКОВ</h2>
+            <div class="leaderboard-list" id="leaderboard">
+                <!-- Leaderboard will be added here -->
+            </div>
+        </div>
+
+        <div class="footer">
+            Игра создана для Telegram • Обновляйте страницу для синхронизации
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        Улучшение куплено! 🎉
+    </div>
+
+    <script>
+        // Игровые данные
+        let score = parseInt(localStorage.getItem('clickerScore')) || 0;
+        let clickPower = parseInt(localStorage.getItem('clickPower')) || 1;
+        let boosters = JSON.parse(localStorage.getItem('clickerBoosters')) || [
+            { id: 1, name: "💪 Двойная сила", cost: 50, power: 2, level: 0, active: false },
+            { id: 2, name: "🚀 Турбо-клик", cost: 200, power: 5, level: 0, active: false },
+            { id: 3, name: "⚡ Мега-буст", cost: 1000, power: 10, level: 0, active: false },
+            { id: 4, name: "👑 Про-мод", cost: 5000, power: 50, level: 0, active: false }
+        ];
+
+        // Лидерборд (в реальном приложении будет на сервере)
+        let leaderboard = JSON.parse(localStorage.getItem('clickerLeaderboard')) || [
+            { id: 1, name: "Про-Кликер", score: 999999, isCurrent: false },
+            { id: 2, name: "Турбо-Игрок", score: 500000, isCurrent: false },
+            { id: 3, name: "Мега-Клик", score: 250000, isCurrent: false },
+            { id: 4, name: "Бустер-Мастер", score: 100000, isCurrent: false },
+            { id: 5, name: "Новичок", score: 50000, isCurrent: false }
+        ];
+
+        // DOM элементы
+        const scoreElement = document.getElementById('score');
+        const clickButton = document.getElementById('clickButton');
+        const clickPowerElement = document.getElementById('clickPower');
+        const boostersContainer = document.getElementById('boosters');
+        const leaderboardContainer = document.getElementById('leaderboard');
+        const notification = document.getElementById('notification');
+
+        // Обновление отображения счета
+        function updateScore() {
+            scoreElement.textContent = score.toLocaleString();
+            updateCurrentUserInLeaderboard();
+            saveGame();
+            updateLeaderboard();
+        }
+
+        // Обновление силы клика
+        function updateClickPower() {
+            clickPowerElement.textContent = clickPower;
+        }
+
+        // Сохранение игры
+        function saveGame() {
+            localStorage.setItem('clickerScore', score);
+            localStorage.setItem('clickPower', clickPower);
+            localStorage.setItem('clickerBoosters', JSON.stringify(boosters));
+        }
+
+        // Покупка бустера
+        function buyBooster(boosterId) {
+            const booster = boosters.find(b => b.id === boosterId);
+            
+            if (score >= booster.cost) {
+                score -= booster.cost;
+                booster.level++;
+                clickPower += booster.power;
+                booster.cost = Math.floor(booster.cost * 2.5); // Увеличиваем стоимость
+                booster.active = true;
+                
+                showNotification(`Куплено: ${booster.name} (+${booster.power} силы)`);
+                updateScore();
+                updateClickPower();
+                renderBoosters();
+            } else {
+                showNotification('Недостаточно очков!', true);
+            }
+        }
+
+        // Показ уведомления
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.style.background = isError ? '#FF416C' : '#4CAF50';
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+
+        // Обновление текущего пользователя в лидерборде
+        function updateCurrentUserInLeaderboard() {
+            const currentUser = leaderboard.find(user => user.isCurrent);
+            
+            if (currentUser) {
+                currentUser.score = score;
+                currentUser.name = getTelegramUsername() || 'Вы';
+            } else {
+                // Добавляем текущего пользователя в лидерборд
+                leaderboard.push({
+                    id: Date.now(),
+                    name: getTelegramUsername() || 'Вы',
+                    score: score,
+                    isCurrent: true
+                });
+            }
+            
+            // Сортируем лидерборд
+            leaderboard.sort((a, b) => b.score - a.score);
+            
+            // Сохраняем лидерборд
+            localStorage.setItem('clickerLeaderboard', JSON.stringify(leaderboard));
+        }
+
+        // Получение имени пользователя Telegram
+        function getTelegramUsername() {
+            if (window.Telegram && Telegram.WebApp) {
+                return Telegram.WebApp.initDataUnsafe.user?.username || 
+                       Telegram.WebApp.initDataUnsafe.user?.first_name || 'TG User';
+            }
+            return 'Вы';
+        }
+
+        // Рендеринг бустеров
+        function renderBoosters() {
+            boostersContainer.innerHTML = '';
+            
+            boosters.forEach(booster => {
+                const boosterElement = document.createElement('div');
+                boosterElement.className = `booster ${booster.active ? 'active' : ''}`;
+                boosterElement.innerHTML = `
+                    <div class="booster-icon">${booster.name.split(' ')[0]}</div>
+                    <div class="booster-name">${booster.name}</div>
+                    <div class="booster-cost">Цена: ${booster.cost.toLocaleString()}</div>
+                    <div style="margin-top: 5px; font-size: 0.8rem;">Уровень: ${booster.level}</div>
+                `;
+                
+                boosterElement.addEventListener('click', () => buyBooster(booster.id));
+                boostersContainer.appendChild(boosterElement);
+            });
+        }
+
+        // Рендеринг лидерборда
+        function updateLeaderboard() {
+            leaderboardContainer.innerHTML = '';
+            
+            leaderboard.slice(0, 5).forEach((user, index) => {
+                const item = document.createElement('div');
+                item.className = `leaderboard-item ${user.isCurrent ? 'current-user' : ''}`;
+                item.innerHTML = `
+                    <div class="rank">#${index + 1}</div>
+                    <div class="player-info">
+                        <div class="player-name">${user.name}</div>
+                    </div>
+                    <div class="player-score">${user.score.toLocaleString()}</div>
+                `;
+                leaderboardContainer.appendChild(item);
+            });
+        }
+
+        // Клик по основной кнопке
+        clickButton.addEventListener('click', () => {
+            score += clickPower;
+            updateScore();
+            
+            // Анимация клика
+            clickButton.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                clickButton.style.transform = 'scale(1)';
+            }, 100);
+            
+            // Создаем летающее число
+            const floatingNumber = document.createElement('div');
+            floatingNumber.textContent = `+${clickPower}`;
+            floatingNumber.style.position = 'absolute';
+            floatingNumber.style.color = '#FFD700';
+            floatingNumber.style.fontSize = '1.5rem';
+            floatingNumber.style.fontWeight = '900';
+            floatingNumber.style.pointerEvents = 'none';
+            floatingNumber.style.animation = 'floatUp 1s forwards';
+            
+            // Позиционируем относительно кнопки
+            const rect = clickButton.getBoundingClientRect();
+            floatingNumber.style.left = `${rect.width / 2}px`;
+            floatingNumber.style.top = `${rect.height / 2}px`;
+            
+            clickButton.appendChild(floatingNumber);
+            
+            // Удаляем через 1 секунду
+            setTimeout(() => {
+                floatingNumber.remove();
+            }, 1000);
+        });
+
+        // Добавляем стили для анимации летающих чисел
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes floatUp {
+                0% {
+                    opacity: 1;
+                    transform: translate(0, 0) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(${Math.random() * 100 - 50}px, -100px) scale(1.5);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Авто-кликер (секретная функция)
+        let autoClicker = setInterval(() => {
+            if (boosters[1].active) { // Если куплен "Турбо-клик"
+                score += Math.floor(clickPower * 0.1);
+                updateScore();
+            }
+        }, 1000);
+
+        // Инициализация игры
+        function initGame() {
+            updateScore();
+            updateClickPower();
+            renderBoosters();
+            updateLeaderboard();
+            
+            // Проверяем, если игра в Telegram
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.ready();
+                Telegram.WebApp.expand();
+                
+                // Меняем название в заголовке
+                document.querySelector('.header h1').textContent = 'TG CLICKER PRO';
+                
+                // Добавляем в лидерборд
+                updateCurrentUserInLeaderboard();
+            }
+        }
+
+        // Запуск игры при загрузке
+        window.addEventListener('load', initGame);
+
+        // Сохранение при закрытии
+        window.addEventListener('beforeunload', saveGame);
+    </script>
+</body>
+</html>
