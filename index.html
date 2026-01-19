@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Diamond Miner | Real Odds</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --primary: #fbbf24;
+            --accent: #38bdf8;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --text: #f8fafc;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top, #1e293b, #0f172a);
+            min-height: 100vh;
+            color: var(--text);
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* HEADER & BALANCE */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .balance-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .balance-icon {
+            color: var(--primary);
+            font-size: 1.2rem;
+            filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5));
+        }
+
+        .balance-amount {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .deposit-btn {
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+            color: #000;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .deposit-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* GAME BOARD */
+        .game-board-wrapper {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+            transition: height 0.3s;
+        }
+
+        .game-grid {
+            display: grid;
+            gap: 8px;
+            margin: 0 auto;
+        }
+
+        .cell {
+            background: rgba(51, 65, 85, 0.5);
+            border-radius: 12px;
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 0 rgba(15, 23, 42, 0.5);
+        }
+
+        .cell:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(15, 23, 42, 0.5);
+        }
+
+        .cell.revealed {
+            background: rgba(30, 41, 59, 0.8);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+            transform: none;
+            cursor: default;
+        }
+
+        .cell.diamond {
+            border-color: var(--accent);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .cell.mine {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+            animation: shake 0.5s;
+        }
+
+        .cell i {
+            transform: scale(0);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .cell.revealed i {
+            transform: scale(1);
+        }
+
+        /* CONTROLS */
+        .controls-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .setting-group {
+            flex: 1;
+        }
+
+        .label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 600;
+        }
+
+        .segment-control {
+            display: flex;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 4px;
+            border-radius: 12px;
+            gap: 4px;
+        }
+
+        .segment-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .segment-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .bet-input-group {
+            display: flex;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 12px;
+            padding: 4px;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .bet-input-group:focus-within {
+            border-color: var(--primary);
+        }
+
+        .bet-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 8px;
+            outline: none;
+            width: 50px;
+        }
+
+        .bet-control-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+
+        .btn-play {
+            background: linear-gradient(135deg, var(--success), #16a34a);
+            color: white;
+            box-shadow: 0 4px 0 #15803d;
+        }
+        
+        .btn-play:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .btn-cashout {
+            background: linear-gradient(135deg, var(--primary), #d97706);
+            color: #0f172a;
+            box-shadow: 0 4px 0 #b45309;
+            display: none;
+        }
+
+        .btn-cashout:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        /* NEXT PROFIT */
+        .next-profit-info {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            pointer-events: none;
+            display: none;
+        }
+
+        /* MORE GAMES BTN */
+        .more-games-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 100px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            z-index: 50;
+            width: 90%;
+            max-width: 400px;
+            justify-content: center;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        /* MODAL */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            padding: 20px;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: #1e293b;
+            width: 100%;
+            max-width: 360px;
+            border-radius: 24px;
+            padding: 24px;
+            text-align: center;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .stars-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .star-package {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--primary);
+            border-radius: 16px;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .star-package:active { transform: scale(0.95); }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .multiplier-badge {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: var(--primary);
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .multiplier-badge.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="top-bar">
+            <div class="balance-card">
+                <i class="fas fa-coins balance-icon"></i>
+                <span class="balance-amount" id="balance">100</span>
+            </div>
+            <button class="deposit-btn" onclick="openDepositModal()">
+                <i class="fas fa-star"></i> Пополнить
+            </button>
+        </div>
+
+        <div class="game-board-wrapper">
+            <div class="multiplier-badge" id="current-mult">x1.00</div>
+            <div class="game-grid" id="grid">
+                </div>
+            <div class="next-profit-info" id="next-profit">След. ход: +20%</div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="settings-row">
+                <div class="setting-group">
+                    <span class="label">Размер поля</span>
+                    <div class="segment-control">
+                        <button class="segment-btn active" onclick="setSize(3)">3x3</button>
+                        <button class="segment-btn" onclick="setSize(5)">5x5</button>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <span class="label">Мины</span>
+                    <div class="segment-control" id="mines-control">
+                        </div>
+                </div>
+            </div>
+
+            <span class="label">Ставка</span>
+            <div class="settings-row">
+                <div class="bet-input-group" style="width: 100%;">
+                    <button class="bet-control-btn" onclick="adjustBet('min')">MIN</button>
+                    <button class="bet-control-btn" onclick="adjustBet('half')">½</button>
+                    <input type="number" id="bet-amount" class="bet-input" value="10" readonly>
+                    <button class="bet-control-btn" onclick="adjustBet('double')">x2</button>
+                    <button class="bet-control-btn" onclick="adjustBet('max')">MAX</button>
+                </div>
+            </div>
+
+            <button id="main-btn" class="action-btn btn-play" onclick="startGame()">
+                ИГРАТЬ
+            </button>
+            <button id="cashout-btn" class="action-btn btn-cashout" onclick="cashout()">
+                ЗАБРАТЬ
+            </button>
+        </div>
+    </div>
+
+    <button class="more-games-btn" onclick="tg.showAlert('Раздел в разработке! Скоро появятся новые режимы.')">
+        <i class="fas fa-gamepad"></i>
+        <span>Другие игры</span>
+        <i class="fas fa-chevron-right" style="margin-left: auto; font-size: 0.8rem; opacity: 0.5;"></i>
+    </button>
+
+    <div class="modal" id="deposit-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeDepositModal()">×</button>
+            <h2 style="margin-bottom: 10px;"><i class="fas fa-star" style="color: var(--primary)"></i> Пополнение</h2>
+            <p style="color: #94a3b8; font-size: 0.9rem;">1 Звезда = 5 Монет</p>
+            
+            <div class="stars-grid">
+                <div class="star-package" onclick="buyStars(10)">
+                    <div style="font-weight: 800; font-size: 1.2rem; color: white;">50 <i class="fas fa-coins"></i></div>
+                    <div style="color: var(--primary); font-size: 0.9rem;">10 Stars</div>
+                </div>
+                <div class="star-package" onclick="buyStars(50)">
+                    <div style="font-weight: 800; font-size: 1.2rem; color: white;">250 <i class="fas fa-coins"></i></div>
+                    <div style="color: var(--primary); font-size: 0.9rem;">50 Stars</div>
+                </div>
+                <div class="star-package" onclick="buyStars(100)">
+                    <div style="font-weight: 800; font-size: 1.2rem; color: white;">500 <i class="fas fa-coins"></i></div>
+                    <div style="color: var(--primary); font-size: 0.9rem;">100 Stars</div>
+                </div>
+                <div class="star-package" onclick="buyStars(500)">
+                    <div style="font-weight: 800; font-size: 1.2rem; color: white;">2500 <i class="fas fa-coins"></i></div>
+                    <div style="color: var(--primary); font-size: 0.9rem;">500 Stars</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // --- SOUND MANAGER (Web Audio API) ---
+        class SoundManager {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.enabled = true;
+            }
+
+            playTone(freq, type, duration, vol = 0.1) {
+                if (!this.enabled) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playDiamond() {
+                // Приятный высокий "дзынь" (два тона)
+                this.playTone(1200, 'sine', 0.3, 0.1);
+                setTimeout(() => this.playTone(1800, 'sine', 0.4, 0.05), 50);
+            }
+
+            playMine() {
+                // Глухой низкий удар, не страшный
+                if (!this.enabled) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+
+                osc.type = 'sawtooth'; // Пила для насыщенности
+                osc.frequency.setValueAtTime(80, this.ctx.currentTime); // Низкий бас
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3); // Падение тона
+
+                filter.type = 'lowpass';
+                filter.frequency.value = 300; // Срезаем резкие верха
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playWin() {
+                // Аккорд победы
+                this.playTone(523.25, 'triangle', 0.5, 0.1); // C
+                setTimeout(() => this.playTone(659.25, 'triangle', 0.5, 0.1), 100); // E
+                setTimeout(() => this.playTone(783.99, 'triangle', 0.8, 0.1), 200); // G
+            }
+
+            // Инициализация звука по первому клику (требование браузеров)
+            init() {
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+        }
+
+        const audio = new SoundManager();
+        document.body.addEventListener('click', () => audio.init(), { once: true });
+
+        // --- GAME STATE ---
+        const state = {
+            balance: parseInt(localStorage.getItem('balance')) || 100,
+            bet: 10,
+            gridSize: 3,
+            minesCount: 3,
+            isPlaying: false,
+            multiplier: 1.0,
+            openedCells: 0,
+            minesLocations: [], 
+            gameOver: false
+        };
+
+        const el = {
+            balance: document.getElementById('balance'),
+            grid: document.getElementById('grid'),
+            betInput: document.getElementById('bet-amount'),
+            mainBtn: document.getElementById('main-btn'),
+            cashoutBtn: document.getElementById('cashout-btn'),
+            minesControl: document.getElementById('mines-control'),
+            multBadge: document.getElementById('current-mult'),
+            nextProfit: document.getElementById('next-profit')
+        };
+
+        // --- CRYPTO RANDOM ---
+        function getSecureRandomNumber(min, max) {
+            const range = max - min + 1;
+            const bytesNeeded = Math.ceil(Math.log2(range) / 8);
+            const cutoff = Math.floor((256 ** bytesNeeded) / range) * range;
+            const bytes = new Uint8Array(bytesNeeded);
+            let value;
+            do {
+                crypto.getRandomValues(bytes);
+                value = 0;
+                for (let i = 0; i < bytesNeeded; i++) {
+                    value = (value << 8) + bytes[i];
+                }
+            } while (value >= cutoff);
+            return min + (value % range);
+        }
+
+        function secureShuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = getSecureRandomNumber(0, i);
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- LOGIC ---
+        function calculateNewMultiplier() {
+            const totalCells = state.gridSize * state.gridSize;
+            const mines = state.minesCount;
+            const opened = state.openedCells;
+            const remainingCellsBeforeMove = totalCells - (opened - 1);
+            const safeCellsBeforeMove = remainingCellsBeforeMove - mines;
+            
+            if (safeCellsBeforeMove <= 0) return state.multiplier;
+
+            const rawMultiplierIncrease = remainingCellsBeforeMove / safeCellsBeforeMove;
+            const houseEdge = 0.98; // 2% комиссия
+
+            state.multiplier = state.multiplier * rawMultiplierIncrease * houseEdge;
+        }
+
+        function init() {
+            updateBalance();
+            renderMinesControl();
+            drawGrid();
+            if(tg.colorScheme === 'light') {
+                document.documentElement.style.setProperty('--bg-color', '#f1f5f9');
+            }
+        }
+
+        function updateBalance() {
+            el.balance.textContent = Math.floor(state.balance);
+            localStorage.setItem('balance', state.balance);
+        }
+
+        function setSize(size) {
+            if(state.isPlaying) return;
+            state.gridSize = size;
+            
+            document.querySelectorAll('.segment-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.includes(size + 'x'));
+            });
+
+            const maxMines = (size * size) - 1;
+            if (state.minesCount >= maxMines) state.minesCount = 1;
+            
+            renderMinesControl();
+            drawGrid();
+        }
+
+        function setMines(count) {
+            if(state.isPlaying) return;
+            state.minesCount = count;
+            renderMinesControl();
+        }
+
+        function renderMinesControl() {
+            const opts = state.gridSize === 3 
+                ? [1, 2, 3, 5, 8] 
+                : [1, 3, 5, 10, 24];
+                
+            let html = '';
+            opts.forEach(num => {
+                const active = state.minesCount === num ? 'active' : '';
+                html += `<button class="segment-btn ${active}" onclick="setMines(${num})">${num}</button>`;
+            });
+            el.minesControl.innerHTML = html;
+        }
+
+        function drawGrid() {
+            el.grid.innerHTML = '';
+            el.grid.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
+            
+            const totalCells = state.gridSize * state.gridSize;
+            for(let i = 0; i < totalCells; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.id = i;
+                cell.onclick = () => handleCellClick(i);
+                el.grid.appendChild(cell);
+            }
+        }
+
+        function adjustBet(action) {
+            if(state.isPlaying) return;
+            let current = parseInt(el.betInput.value);
+            
+            switch(action) {
+                case 'min': current = 5; break;
+                case 'half': current = Math.max(5, Math.floor(current / 2)); break;
+                case 'double': current = Math.min(state.balance, current * 2); break;
+                case 'max': current = state.balance; break;
+            }
+            if (current > state.balance) current = state.balance;
+            if (current < 5) current = 5;
+            state.bet = current;
+            el.betInput.value = current;
+        }
+
+        function startGame() {
+            if(state.balance < state.bet) {
+                tg.showAlert("Недостаточно монет! Пополните баланс.");
+                openDepositModal();
+                return;
+            }
+
+            state.balance -= state.bet;
+            updateBalance();
+            
+            state.isPlaying = true;
+            state.gameOver = false;
+            state.openedCells = 0;
+            state.multiplier = 1.0;
+            
+            const totalCells = state.gridSize * state.gridSize;
+            const allPositions = Array.from({length: totalCells}, (_, i) => i);
+            const shuffled = secureShuffle(allPositions);
+            state.minesLocations = shuffled.slice(0, state.minesCount);
+            
+            drawGrid();
+            el.mainBtn.style.display = 'none';
+            el.cashoutBtn.style.display = 'block';
+            el.cashoutBtn.textContent = `ИГРА ИДЕТ...`;
+            el.cashoutBtn.disabled = true;
+            el.cashoutBtn.style.opacity = '0.7';
+            
+            el.multBadge.classList.add('visible');
+            el.multBadge.textContent = 'x1.00';
+            
+            document.querySelectorAll('.settings-row button').forEach(b => b.disabled = true);
+        }
+
+        function handleCellClick(id) {
+            if(!state.isPlaying || state.gameOver) return;
+            
+            const cell = el.grid.children[id];
+            if(cell.classList.contains('revealed')) return;
+            
+            // Инициализация аудио контекста (если еще не запущен)
+            audio.init();
+            
+            cell.classList.add('revealed');
+            
+            if(state.minesLocations.includes(id)) {
+                // --- ПРОИГРЫШ ---
+                cell.classList.add('mine');
+                cell.innerHTML = '<i class="fas fa-bomb"></i>';
+                tg.HapticFeedback.notificationOccurred('error');
+                audio.playMine(); // Звук мины
+                endGame(false);
+            } else {
+                // --- АЛМАЗ ---
+                cell.classList.add('diamond');
+                cell.innerHTML = '<i class="fas fa-gem"></i>';
+                tg.HapticFeedback.impactOccurred('medium');
+                audio.playDiamond(); // Звук алмаза
+                
+                state.openedCells++;
+                calculateNewMultiplier();
+                
+                const currentWin = Math.floor(state.bet * state.multiplier);
+                
+                el.cashoutBtn.disabled = false;
+                el.cashoutBtn.style.opacity = '1';
+                el.cashoutBtn.innerHTML = `ЗАБРАТЬ <i class="fas fa-coins"></i> ${currentWin}`;
+                
+                el.multBadge.textContent = `x${state.multiplier.toFixed(2)}`;
+                
+                const totalSafeCells = (state.gridSize * state.gridSize) - state.minesCount;
+                if(state.openedCells === totalSafeCells) {
+                    cashout();
+                }
+            }
+        }
+
+        function cashout() {
+            if(!state.isPlaying) return;
+            
+            const winAmount = Math.floor(state.bet * state.multiplier);
+            state.balance += winAmount;
+            updateBalance();
+            
+            tg.HapticFeedback.notificationOccurred('success');
+            audio.playWin(); // Победный джингл
+            endGame(true);
+        }
+
+        function endGame(win) {
+            state.isPlaying = false;
+            state.gameOver = true;
+            
+            state.minesLocations.forEach(idx => {
+                const cell = el.grid.children[idx];
+                if(!cell.classList.contains('revealed')) {
+                    cell.classList.add('revealed', 'mine');
+                    cell.innerHTML = '<i class="fas fa-bomb" style="opacity: 0.5"></i>';
+                } else if (!win && cell.classList.contains('mine')) {
+                    cell.style.background = 'rgba(239, 68, 68, 0.5)';
+                }
+            });
+
+            const totalCells = state.gridSize * state.gridSize;
+            for(let i=0; i<totalCells; i++) {
+                if(!state.minesLocations.includes(i)) {
+                    const cell = el.grid.children[i];
+                    if(!cell.classList.contains('revealed')) {
+                        cell.classList.add('revealed');
+                        cell.innerHTML = '<i class="fas fa-gem" style="opacity: 0.2"></i>';
+                    }
+                }
+            }
+
+            setTimeout(() => {
+                el.mainBtn.style.display = 'block';
+                el.cashoutBtn.style.display = 'none';
+                el.multBadge.classList.remove('visible');
+                document.querySelectorAll('.settings-row button').forEach(b => b.disabled = false);
+            }, 1500);
+        }
+
+        function openDepositModal() {
+            document.getElementById('deposit-modal').classList.add('active');
+        }
+
+        function closeDepositModal() {
+            document.getElementById('deposit-modal').classList.remove('active');
+        }
+
+        function buyStars(starsAmount) {
+            tg.showConfirm(`Купить ${starsAmount} Stars? (Тестовый режим)`, (confirm) => {
+                if(confirm) {
+                    const coins = starsAmount * 5;
+                    state.balance += coins;
+                    updateBalance();
+                    closeDepositModal();
+                    tg.showAlert(`Успешно! Начислено ${coins} монет.`);
+                    tg.HapticFeedback.notificationOccurred('success');
+                    audio.playWin(); // Звук монет
+                }
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
