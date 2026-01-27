@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Diamond Miner | Glass Edition</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-deep: #000000;
+            --bg-gradient: radial-gradient(circle at 50% 0%, #2c3e50 0%, #000000 100%);
+            --primary: #FFD60A;
+            --silver: #C0C0C0;
+            --accent: #0A84FF;
+            --danger: #FF453A;
+            --success: #30D158;
+            --text: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-highlight: rgba(255, 255, 255, 0.05);
+            --glass-blur: blur(25px);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            --island-bg: #000000;
+        }
+
+        body.light-theme {
+            --bg-deep: #F2F2F7;
+            --bg-gradient: radial-gradient(circle at 50% 0%, #a1c4fd 0%, #c2e9fb 100%);
+            --primary: #FFcc00;
+            --text: #000000;
+            --text-secondary: rgba(0, 0, 0, 0.5);
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-highlight: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+            --island-bg: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: var(--bg-deep);
+            background-image: var(--bg-gradient);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text);
+            padding: 16px;
+            padding-bottom: 90px;
+            padding-top: 60px;
+            transition: all 0.5s ease;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0; transform: translateX(-100%); }
+            50% { opacity: 1; transform: translateX(100%); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 214, 10, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(255, 214, 10, 0.6); }
+        }
+
+        .dynamic-island-container {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            transition: opacity 0.3s;
+        }
+
+        .dynamic-island-container.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .dynamic-island {
+            background: var(--island-bg);
+            width: 120px;
+            height: 35px;
+            border-radius: 20px;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            position: relative;
+        }
+
+        body.light-theme .dynamic-island {
+            background: var(--island-bg);
+            color: #000;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+
+        .island-idle {
+            width: 8px;
+            height: 8px;
+            background: #333;
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: pulse 2s infinite;
+        }
+
+        body.light-theme .island-idle {
+            background: #999;
+        }
+
+        .dynamic-island.expanded {
+            width: 340px;
+            height: 80px;
+            border-radius: 40px;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .island-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .dynamic-island.expanded .island-content {
+            opacity: 1;
+            transform: scale(1);
+            transition-delay: 0.2s;
+        }
+
+        .island-icon {
+            font-size: 2rem;
+            margin-right: 12px;
+            animation: bounce 1s infinite;
+        }
+
+        .island-icon.win {
+            color: var(--success);
+            filter: drop-shadow(0 0 10px var(--success));
+        }
+
+        .island-icon.lose {
+            color: var(--danger);
+            filter: drop-shadow(0 0 10px var(--danger));
+        }
+
+        .island-text {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            flex-grow: 1;
+        }
+
+        .island-title {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        body.light-theme .island-title { 
+            color: rgba(0,0,0,0.5); 
+        }
+
+        .island-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #fff;
+            margin-top: 2px;
+        }
+        
+        body.light-theme .island-value { 
+            color: #000; 
+        }
+
+        .island-coins {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.6), inset 0 2px 4px rgba(255,255,255,0.3);
+            animation: spin 2s linear infinite;
+        }
+
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid var(--glass-highlight);
+            box-shadow: var(--glass-shadow);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+
+        .balance-card {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-grow: 1;
+            height: 56px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .balance-card:active {
+            transform: scale(0.98);
+        }
+
+        .balance-icon {
+            color: var(--primary);
+            font-size: 1.4rem;
+            filter: drop-shadow(0 0 10px rgba(255, 214, 10, 0.4));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .balance-icon.silver {
+            color: var(--silver);
+            filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.4));
+        }
+
+        .balance-amount {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .icon-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            border: none;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .icon-btn:active { 
+            transform: scale(0.9); 
+        }
+        
+        .deposit-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, #FFB800 100%);
+            color: #000;
+            font-weight: 700;
+            padding: 0 20px;
+            width: auto;
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(255, 214, 10, 0.4), inset 0 1px 2px rgba(255,255,255,0.3);
+            animation: glow 2s infinite;
+        }
+
+        .game-board-wrapper {
+            padding: 20px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            min-height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-grid {
+            display: grid;
+            gap: 10px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            aspect-ratio: 1;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        body.light-theme .cell {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .cell:active { 
+            transform: scale(0.95); 
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .cell:hover::before {
+            opacity: 1;
+        }
+
+        .cell.revealed {
+            background: rgba(0, 0, 0, 0.2);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+            border-color: transparent;
+            animation: reveal-cell 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes reveal-cell {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        body.light-theme .cell.revealed {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .cell-content {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 5;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-size: 1.8rem;
+        }
+
+        .cell.revealed .cell-content { 
+            transform: translate(-50%, -50%) scale(1); 
+        }
+
+        .cell.diamond {
+            background: radial-gradient(circle at center, rgba(10, 132, 255, 0.25) 0%, transparent 70%);
+            border: 1px solid rgba(10, 132, 255, 0.5);
+            box-shadow: 0 0 25px rgba(10, 132, 255, 0.3);
+            animation: glow-diamond 1.5s infinite alternate;
+        }
+
+        @keyframes glow-diamond {
+            from { box-shadow: 0 0 20px rgba(10, 132, 255, 0.3); }
+            to { box-shadow: 0 0 30px rgba(10, 132, 255, 0.5); }
+        }
+
+        .cell.mine {
+            background: radial-gradient(circle at center, rgba(255, 69, 58, 0.25) 0%, transparent 70%);
+            border: 1px solid rgba(255, 69, 58, 0.5);
+            box-shadow: 0 0 25px rgba(255, 69, 58, 0.3);
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake { 
+            10%, 90% { transform: translate3d(-1px, 0, 0); } 
+            20%, 80% { transform: translate3d(2px, 0, 0); } 
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 
+            40%, 60% { transform: translate3d(4px, 0, 0); } 
+        }
+
+        .controls-panel {
+            padding: 24px;
+        }
+
+        .label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .segment-control {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: 14px;
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        body.light-theme .segment-control { 
+            background: rgba(0, 0, 0, 0.05); 
+        }
+
+        .segment-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .segment-btn.active {
+            background: var(--glass-bg);
+            color: var(--text);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid var(--glass-border);
+            transform: scale(1.05);
+        }
+
+        .currency-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .currency-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            color: var(--text);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .currency-btn.active {
+            background: var(--glass-bg);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 15px rgba(255, 214, 10, 0.3);
+        }
+
+        .currency-btn.gold.active {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .currency-btn.silver.active {
+            border-color: var(--silver);
+            color: var(--silver);
+        }
+
+        .bet-container {
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            border-radius: 16px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+        }
+        
+        body.light-theme .bet-container { 
+            background: rgba(0,0,0,0.05); 
+        }
+
+        .bet-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            padding: 10px;
+            outline: none;
+            width: 50px;
+        }
+
+        .bet-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 12px;
+            background: var(--glass-bg);
+            color: var(--text);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .bet-btn:active { 
+            background: rgba(255,255,255,0.2); 
+            transform: scale(0.95);
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 20px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            margin-top: 16px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-play {
+            background: linear-gradient(135deg, var(--success) 0%, #25B85C 100%);
+            color: #fff;
+            box-shadow: 0 8px 25px rgba(48, 209, 88, 0.4), inset 0 1px 2px rgba(255,255,255,0.2);
+        }
+
+        .btn-cashout {
+            background: linear-gradient(135deg, var(--primary) 0%, #FFB800 100%);
+            color: #000;
+            box-shadow: 0 8px 25px rgba(255, 214, 10, 0.4), inset 0 1px 2px rgba(255,255,255,0.2);
+            display: none;
+        }
+        
+        .action-btn:active { 
+            transform: scale(0.96); 
+        }
+
+        .action-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .action-btn:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .profile-btn-floating {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .profile-btn-floating:active {
+            transform: translateX(-50%) scale(0.98);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(15px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 28px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+            position: relative;
+        }
+
+        .modal.active .modal-content { 
+            transform: scale(1); 
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            color: var(--text);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-modal:hover {
+            background: rgba(255,255,255,0.2);
+            transform: rotate(90deg);
+        }
+
+        .multiplier-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, var(--primary) 0%, #FFB800 100%);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(255,204,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 10;
+            color: #000;
+        }
+        
+        body.light-theme .multiplier-badge { 
+            background: linear-gradient(135deg, #FFB800 0%, #FF9500 100%);
+            color: #000; 
+        }
+
+        .multiplier-badge.visible {
+            opacity: 1;
+            transform: translateY(0);
+            animation: pulse 2s infinite;
+        }
+
+        .stars-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+            margin-top: 20px; 
+        }
+        
+        .star-package { 
+            background: rgba(255,255,255,0.05); 
+            padding: 15px; 
+            border-radius: 16px; 
+            cursor: pointer; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(10px);
+        }
+        
+        body.light-theme .star-package { 
+            background: rgba(0,0,0,0.05); 
+            border-color: rgba(0,0,0,0.1); 
+        }
+        
+        .star-package:active { 
+            transform: scale(0.95); 
+            background: rgba(255,255,255,0.15); 
+        }
+
+        .profile-avatar { 
+            width: 80px; 
+            height: 80px; 
+            border-radius: 50%; 
+            margin: 0 auto 15px; 
+            background: var(--glass-bg); 
+            border: 2px solid var(--primary); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 2rem; 
+            color: var(--primary); 
+            overflow: hidden; 
+            position: relative;
+            box-shadow: 0 0 20px rgba(255,204,0,0.3);
+        }
+        
+        .profile-avatar img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+        
+        .stat-row { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 12px 0; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+        }
+        
+        body.light-theme .stat-row { 
+            border-bottom: 1px solid rgba(0,0,0,0.1); 
+        }
+
+        .history-list { 
+            margin-top: 20px; 
+            max-height: 200px; 
+            overflow-y: auto; 
+            text-align: left; 
+        }
+        
+        .history-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 10px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            font-size: 0.9rem; 
+        }
+        
+        .win-text { 
+            color: var(--success); 
+        }
+        
+        .loss-text { 
+            color: var(--danger); 
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history-list::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        .gift-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+
+        .gift-item:active {
+            transform: scale(0.98);
+        }
+
+        .daily-bonus-timer {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.2);
+            transition: .4s;
+            border-radius: 34px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .tab-control {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px;
+            border-radius: 14px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: var(--glass-bg);
+            color: var(--text);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .promo-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text);
+            text-align: center;
+            margin: 10px 0;
+            font-size: 1rem;
+        }
+
+        .promo-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, #FFB800 100%);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .promo-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dynamic-island-container" id="dynamic-island-container">
+        <div class="dynamic-island" id="dynamic-island">
+            <div class="island-idle"></div>
+            <div class="island-content" id="island-content">
+                <i class="fas fa-gem island-icon win"></i>
+                <div class="island-text">
+                    <span class="island-title">Выигрыш</span>
+                    <span class="island-value" id="island-win-amount">+500</span>
+                </div>
+                <div class="island-coins">
+                    <i class="fas fa-coins"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <div class="top-bar">
+            <div class="glass-panel balance-card" style="flex-grow: 0.5;">
+                <i class="fas fa-coins balance-icon"></i>
+                <span class="balance-amount" id="balance">0</span>
+            </div>
+            <div class="glass-panel balance-card" style="flex-grow: 0.5;">
+                <i class="fas fa-coins balance-icon silver"></i>
+                <span class="balance-amount" id="silver-balance">50</span>
+            </div>
+            <button class="glass-panel icon-btn" id="theme-toggle" onclick="toggleTheme()">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="glass-panel icon-btn deposit-btn" onclick="openDepositModal()">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+
+        <div class="glass-panel game-board-wrapper">
+            <div class="multiplier-badge" id="current-mult">x1.00</div>
+            <div class="game-grid" id="grid"></div>
+        </div>
+
+        <div class="glass-panel controls-panel">
+            
+            <div style="display: flex; gap: 16px;">
+                <div style="flex: 1;">
+                    <span class="label">Поле</span>
+                    <div class="segment-control">
+                        <button class="segment-btn active" onclick="setSize(3)">3x3</button>
+                        <button class="segment-btn" onclick="setSize(5)">5x5</button>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <span class="label">Мины</span>
+                    <div class="segment-control" id="mines-control"></div>
+                </div>
+            </div>
+
+            <span class="label">Валюта ставки</span>
+            <div class="currency-selector">
+                <button class="currency-btn gold active" onclick="setCurrency('gold')">
+                    <i class="fas fa-coins"></i> Золото
+                </button>
+                <button class="currency-btn silver" onclick="setCurrency('silver')">
+                    <i class="fas fa-coins"></i> Серебро
+                </button>
+            </div>
+
+            <span class="label">Ставка</span>
+            <div class="bet-container">
+                <button class="bet-btn" onclick="adjustBet('min')">MIN</button>
+                <button class="bet-btn" onclick="adjustBet('half')">½</button>
+                <input type="number" id="bet-amount" class="bet-input" value="10" readonly>
+                <button class="bet-btn" onclick="adjustBet('double')">x2</button>
+                <button class="bet-btn" onclick="adjustBet('max')">MAX</button>
+            </div>
+
+            <button id="main-btn" class="action-btn btn-play" onclick="startGame()">
+                ИГРАТЬ
+            </button>
+            <button id="cashout-btn" class="action-btn btn-cashout" onclick="cashout()">
+                <span>ЗАБРАТЬ</span> <span id="cashout-val">0</span>
+            </button>
+
+        </div>
+    </div>
+
+    <button class="glass-panel profile-btn-floating" onclick="openProfileModal()">
+        <i class="fas fa-user-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
+        <span>Профиль</span>
+    </button>
+
+    <div class="modal" id="deposit-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeDepositModal()">×</button>
+            <i class="fas fa-wallet" style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"></i>
+            <h3>Магазин</h3>
+            
+            <div class="tab-control">
+                <button class="tab-btn active" onclick="switchDepositTab('stars')">Пополнить</button>
+                <button class="tab-btn" onclick="switchDepositTab('exchange')">Обменник</button>
+                <button class="tab-btn" onclick="switchDepositTab('withdraw')">Вывод</button>
+                <button class="tab-btn" onclick="switchDepositTab('gifts')">Подарки</button>
+                <button class="tab-btn" onclick="switchDepositTab('promo')">Промокод</button>
+            </div>
+
+            <div id="stars-tab">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">Пополните баланс звездами TG</p>
+                <div class="stars-grid">
+                    <div class="star-package" onclick="buyStars(1)">
+                        <div style="font-size: 1.2rem; font-weight: 800;">1 <i class="fas fa-coins"></i></div>
+                        <div style="font-size: 0.8rem; opacity: 0.7;">1 ⭐ Star</div>
+                    </div>
+                    <div class="star-package" onclick="buyStars(10)">
+                        <div style="font-size: 1.2rem; font-weight: 800;">10 <i class="fas fa-coins"></i></div>
+                        <div style="font-size: 0.8rem; opacity: 0.7;">10 ⭐ Stars</div>
+                    </div>
+                    <div class="star-package" onclick="buyStars(50)">
+                        <div style="font-size: 1.2rem; font-weight: 800;">50 <i class="fas fa-coins"></i></div>
+                        <div style="font-size: 0.8rem; opacity: 0.7;">50 ⭐ Stars</div>
+                    </div>
+                    <div class="star-package" onclick="buyStars(100)">
+                        <div style="font-size: 1.2rem; font-weight: 800;">100 <i class="fas fa-coins"></i></div>
+                        <div style="font-size: 0.8rem; opacity: 0.7;">100 ⭐ Stars</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="exchange-tab" style="display: none;">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">Обменяйте серебро на золото</p>
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px; margin: 15px 0;">
+                    <div style="font-size: 1rem; margin-bottom: 10px;">100 <i class="fas fa-coins" style="color: var(--silver);"></i> = 5 <i class="fas fa-coins" style="color: var(--primary);"></i></div>
+                    <button class="action-btn btn-play" onclick="exchangeSilver()" style="margin-top: 10px;">Обменять 100 серебра</button>
+                </div>
+            </div>
+
+            <div id="withdraw-tab" style="display: none;">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">Вывод монет в Telegram Stars</p>
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px; margin: 15px 0;">
+                    <div style="font-size: 1rem; margin-bottom: 10px;">
+                        Ваш баланс: <span id="withdraw-balance">0</span> <i class="fas fa-coins"></i><br>
+                        Минимум для вывода: 100 монет<br>
+                        Минимальный депозит для вывода: 20 звёзд
+                    </div>
+                    <input type="number" id="withdraw-amount" placeholder="Введите сумму" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text); text-align: center; margin: 10px 0;">
+                    <button class="action-btn btn-play" onclick="withdrawCoins()" style="margin-top: 10px;">Вывести</button>
+                </div>
+            </div>
+
+            <div id="gifts-tab" style="display: none;">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">Подарки Telegram за монеты</p>
+                <div id="gifts-list">
+                    <div class="gift-item" onclick="buyGift('delicious', 100)">
+                        <div>
+                            <div style="font-size: 1.5rem;">🍰</div>
+                            <div style="font-size: 0.85rem; margin-top: 5px;">Delicious Cake</div>
+                        </div>
+                        <div style="font-weight: 700; color: var(--primary);">100 <i class="fas fa-coins"></i></div>
+                    </div>
+                    <div class="gift-item" onclick="buyGift('star', 500)">
+                        <div>
+                            <div style="font-size: 1.5rem;">⭐</div>
+                            <div style="font-size: 0.85rem; margin-top: 5px;">Blue Star</div>
+                        </div>
+                        <div style="font-weight: 700; color: var(--primary);">500 <i class="fas fa-coins"></i></div>
+                    </div>
+                    <div class="gift-item" onclick="buyGift('fire', 1000)">
+                        <div>
+                            <div style="font-size: 1.5rem;">🔥</div>
+                            <div style="font-size: 0.85rem; margin-top: 5px;">Hot Heart</div>
+                        </div>
+                        <div style="font-weight: 700; color: var(--primary);">1000 <i class="fas fa-coins"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="promo-tab" style="display: none;">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">Активируйте промокод для получения бонуса</p>
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px; margin: 15px 0;">
+                    <input type="text" id="promo-code" class="promo-input" placeholder="Введите промокод" maxlength="20">
+                    <button class="promo-btn" onclick="activatePromo()" style="margin-top: 10px;">Активировать</button>
+                    <div id="promo-status" style="margin-top: 10px; font-size: 0.9rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="profile-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeProfileModal()">×</button>
+            
+            <div class="profile-avatar" onclick="document.getElementById('avatar-upload').click()">
+                <img id="avatar-img" src="" style="display:none;">
+                <i class="fas fa-user" id="avatar-icon"></i>
+            </div>
+            <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+            
+            <h3>Статистика</h3>
+            <div style="margin: 15px 0;">
+                <div class="stat-row">
+                    <span style="color: var(--text-secondary)">Всего игр</span>
+                    <span id="stat-total-games" style="font-weight: 700;">0</span>
+                </div>
+                <div class="stat-row">
+                    <span style="color: var(--text-secondary)">Побед</span>
+                    <span id="stat-wins" style="font-weight: 700;">0</span>
+                </div>
+                <div class="stat-row">
+                    <span style="color: var(--text-secondary)">Выиграно</span>
+                    <span id="stat-total-wins" style="font-weight: 700; color: var(--primary);">0</span>
+                </div>
+                <div class="stat-row">
+                    <span style="color: var(--text-secondary)">Депозитов всего</span>
+                    <span id="stat-total-deposits" style="font-weight: 700; color: var(--primary);">0</span>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 25px;">Настройки</h3>
+            <div style="margin: 15px 0;">
+                <div class="stat-row">
+                    <span style="color: var(--text-secondary)">Динамический островок</span>
+                    <label class="switch">
+                        <input type="checkbox" id="island-toggle" checked onchange="toggleIsland()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="stat-row">
+                    <span style="color: var(--text-secondary)">Звуки</span>
+                    <label class="switch">
+                        <input type="checkbox" id="sound-toggle" checked onchange="toggleSound()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="stat-row">
+                    <span style="color: var(--text-secondary)">Темная тема</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-switch" onchange="toggleTheme()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="action-btn btn-play" onclick="claimDailyBonus()">
+                    <i class="fas fa-gift"></i>
+                    <span>Получить ежедневный бонус</span>
+                </button>
+                <div class="daily-bonus-timer" id="daily-timer">Доступно сейчас!</div>
+            </div>
+
+            <h3 style="margin-top: 25px;">История игр</h3>
+            <div style="margin-bottom: 10px; display: flex; gap: 8px;">
+                <button class="tab-btn active" onclick="renderHistory('all')">Все</button>
+                <button class="tab-btn" onclick="renderHistory('wins')">Победы</button>
+                <button class="tab-btn" onclick="renderHistory('losses')">Поражения</button>
+            </div>
+            <div class="history-list" id="history-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        class SoundManager {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.enabled = true;
+            }
+
+            playTone(freq, type, duration, vol = 0.1) {
+                if (!this.enabled) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playDiamond() {
+                this.playTone(1200, 'sine', 0.3, 0.1);
+                setTimeout(() => this.playTone(1800, 'sine', 0.4, 0.05), 50);
+            }
+
+            playMine() {
+                if (!this.enabled) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(80, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3);
+
+                filter.type = 'lowpass';
+                filter.frequency.value = 300;
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playWin() {
+                this.playTone(523.25, 'triangle', 0.5, 0.1);
+                setTimeout(() => this.playTone(659.25, 'triangle', 0.5, 0.1), 100);
+                setTimeout(() => this.playTone(783.99, 'triangle', 0.8, 0.1), 200);
+            }
+
+            init() {
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+        }
+
+        const audio = new SoundManager();
+        document.body.addEventListener('click', () => audio.init(), { once: true });
+
+        const state = {
+            balance: 0,
+            silverBalance: 50,
+            bet: 10,
+            gridSize: 3,
+            minesCount: 3,
+            isPlaying: false,
+            multiplier: 1.0,
+            openedCells: 0,
+            minesLocations: [],
+            gameOver: false,
+            lightTheme: false,
+            dynamicIslandEnabled: true,
+            soundEnabled: true,
+            totalGames: 0,
+            totalWins: 0,
+            totalWinAmount: 0,
+            totalDeposits: 0, // общая сумма депозитов
+            gameHistory: [],
+            avatar: null,
+            lastDailyBonus: 0,
+            currency: 'gold',
+            usedPromoCodes: []
+        };
+
+        const el = {
+            balance: document.getElementById('balance'),
+            silverBalance: document.getElementById('silver-balance'),
+            grid: document.getElementById('grid'),
+            betInput: document.getElementById('bet-amount'),
+            mainBtn: document.getElementById('main-btn'),
+            cashoutBtn: document.getElementById('cashout-btn'),
+            minesControl: document.getElementById('mines-control'),
+            multBadge: document.getElementById('current-mult'),
+            themeToggle: document.getElementById('theme-toggle'),
+            avatarImg: document.getElementById('avatar-img'),
+            avatarIcon: document.getElementById('avatar-icon'),
+            statTotalWins: document.getElementById('stat-total-wins'),
+            statTotalGames: document.getElementById('stat-total-games'),
+            statWins: document.getElementById('stat-wins'),
+            statTotalDeposits: document.getElementById('stat-total-deposits'),
+            historyList: document.getElementById('history-list'),
+            dynamicIsland: document.getElementById('dynamic-island'),
+            islandContent: document.getElementById('island-content'),
+            islandWinAmount: document.getElementById('island-win-amount'),
+            dailyTimer: document.getElementById('daily-timer'),
+            dynamicIslandContainer: document.getElementById('dynamic-island-container')
+        };
+
+        function saveState() {
+            const saveData = {
+                balance: state.balance,
+                silverBalance: state.silverBalance,
+                totalGames: state.totalGames,
+                totalWins: state.totalWins,
+                totalWinAmount: state.totalWinAmount,
+                totalDeposits: state.totalDeposits,
+                gameHistory: state.gameHistory,
+                avatar: state.avatar,
+                lastDailyBonus: state.lastDailyBonus,
+                currency: state.currency,
+                lightTheme: state.lightTheme,
+                dynamicIslandEnabled: state.dynamicIslandEnabled,
+                soundEnabled: state.soundEnabled,
+                usedPromoCodes: state.usedPromoCodes
+            };
+            localStorage.setItem('diamond_miner_final_v2', JSON.stringify(saveData));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('diamond_miner_final_v2');
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.balance = data.balance || 0;
+                state.silverBalance = data.silverBalance || 50;
+                state.totalGames = data.totalGames || 0;
+                state.totalWins = data.totalWins || 0;
+                state.totalWinAmount = data.totalWinAmount || 0;
+                state.totalDeposits = data.totalDeposits || 0;
+                state.gameHistory = data.gameHistory || [];
+                state.avatar = data.avatar || null;
+                state.lastDailyBonus = data.lastDailyBonus || 0;
+                state.currency = data.currency || 'gold';
+                state.lightTheme = data.lightTheme || false;
+                state.dynamicIslandEnabled = data.dynamicIslandEnabled !== false;
+                state.soundEnabled = data.soundEnabled !== false;
+                state.usedPromoCodes = data.usedPromoCodes || [];
+            }
+        }
+
+        function showIsland(type, amount, currency) {
+            if (!state.dynamicIslandEnabled) return;
+            
+            const island = el.dynamicIsland;
+            const icon = island.querySelector('.island-icon');
+            const title = island.querySelector('.island-title');
+            const value = el.islandWinAmount;
+
+            if (type === 'win') {
+                icon.className = 'fas fa-gem island-icon win';
+                title.textContent = 'Выигрыш';
+                value.textContent = `+${amount}${currency === 'gold' ? ' 🟡' : ' ⚪'}`;
+            } else {
+                icon.className = 'fas fa-bomb island-icon lose';
+                title.textContent = 'Проигрыш';
+                value.textContent = `-${amount}${currency === 'gold' ? ' 🟡' : ' ⚪'}`;
+            }
+
+            island.classList.add('expanded');
+            
+            setTimeout(() => {
+                island.classList.remove('expanded');
+            }, 3000);
+        }
+
+        function toggleIsland() {
+            state.dynamicIslandEnabled = !state.dynamicIslandEnabled;
+            
+            if (state.dynamicIslandEnabled) {
+                el.dynamicIslandContainer.classList.remove('hidden');
+                tg.showAlert('Островок включен');
+            } else {
+                el.dynamicIslandContainer.classList.add('hidden');
+                tg.showAlert('Островок отключен');
+            }
+            saveState();
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            audio.enabled = state.soundEnabled;
+            
+            if (state.soundEnabled) {
+                tg.showAlert('Звуки включены');
+            } else {
+                tg.showAlert('Звуки отключены');
+            }
+            saveState();
+        }
+
+        function toggleTheme() {
+            state.lightTheme = !state.lightTheme;
+            
+            if (state.lightTheme) {
+                document.body.classList.add('light-theme');
+                el.themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                document.getElementById('theme-switch').checked = true;
+            } else {
+                document.body.classList.remove('light-theme');
+                el.themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                document.getElementById('theme-switch').checked = false;
+            }
+            saveState();
+        }
+
+        function loadAvatar() {
+            if (state.avatar) {
+                el.avatarImg.src = state.avatar;
+                el.avatarImg.style.display = 'block';
+                el.avatarIcon.style.display = 'none';
+            } else {
+                el.avatarImg.style.display = 'none';
+                el.avatarIcon.style.display = 'block';
+            }
+        }
+
+        function uploadAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                state.avatar = e.target.result;
+                loadAvatar();
+                tg.showAlert('Аватар обновлен!');
+                saveState();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setCurrency(currency) {
+            if(state.isPlaying) return;
+            
+            state.currency = currency;
+            
+            document.querySelectorAll('.currency-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if(currency === 'gold') {
+                document.querySelector('.currency-btn.gold').classList.add('active');
+            } else {
+                document.querySelector('.currency-btn.silver').classList.add('active');
+            }
+            
+            adjustBet('check');
+            saveState();
+        }
+
+        function updateBalance() {
+            el.balance.textContent = Math.floor(state.balance);
+            el.silverBalance.textContent = Math.floor(state.silverBalance);
+            document.getElementById('withdraw-balance').textContent = state.balance;
+            saveState();
+        }
+
+        function updateStats() {
+            el.statTotalWins.textContent = state.totalWinAmount;
+            el.statTotalGames.textContent = state.totalGames;
+            el.statWins.textContent = state.totalWins;
+            el.statTotalDeposits.textContent = state.totalDeposits;
+        }
+
+        function addGameHistory(result, winAmount, currency) {
+            const gameRecord = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString('ru-RU'),
+                time: new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}),
+                bet: state.bet,
+                result: result,
+                winAmount: winAmount,
+                multiplier: state.multiplier.toFixed(2),
+                currency: currency
+            };
+            
+            state.gameHistory.unshift(gameRecord);
+            if (state.gameHistory.length > 50) {
+                state.gameHistory = state.gameHistory.slice(0, 50);
+            }
+            
+            saveState();
+        }
+
+        function renderHistory(filter = 'all') {
+            let filteredHistory = state.gameHistory;
+            
+            if (filter === 'wins') {
+                filteredHistory = state.gameHistory.filter(game => game.result === 'win');
+            } else if (filter === 'losses') {
+                filteredHistory = state.gameHistory.filter(game => game.result === 'loss');
+            }
+            
+            if (filteredHistory.length === 0) {
+                el.historyList.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.7;">История игр пуста</div>';
+                return;
+            }
+            
+            let html = '';
+            filteredHistory.forEach(game => {
+                const isWin = game.result === 'win';
+                const currencyIcon = game.currency === 'gold' ? '🟡' : '⚪';
+                html += `
+                    <div class="history-item">
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 600;">${game.date} ${game.time}</div>
+                            <div style="font-size: 0.75rem; opacity: 0.7;">Ставка: ${game.bet}${currencyIcon} | Коэф: x${game.multiplier}</div>
+                        </div>
+                        <div class="history-amount ${isWin ? 'win-text' : 'loss-text'}">
+                            ${isWin ? '+' : '-'}${game.winAmount}${currencyIcon}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            el.historyList.innerHTML = html;
+        }
+
+        function getSecureRandomNumber(min, max) {
+            const range = max - min + 1;
+            const bytesNeeded = Math.ceil(Math.log2(range) / 8);
+            const cutoff = Math.floor((256 ** bytesNeeded) / range) * range;
+            const bytes = new Uint8Array(bytesNeeded);
+            let value;
+            do {
+                crypto.getRandomValues(bytes);
+                value = 0;
+                for (let i = 0; i < bytesNeeded; i++) {
+                    value = (value << 8) + bytes[i];
+                }
+            } while (value >= cutoff);
+            return min + (value % range);
+        }
+
+        function secureShuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = getSecureRandomNumber(0, i);
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function calculateNewMultiplier() {
+            const totalCells = state.gridSize * state.gridSize;
+            const mines = state.minesCount;
+            const opened = state.openedCells;
+            const remainingCellsBeforeMove = totalCells - (opened - 1);
+            const safeCellsBeforeMove = remainingCellsBeforeMove - mines;
+            
+            if (safeCellsBeforeMove <= 0) return state.multiplier;
+
+            const rawMultiplierIncrease = remainingCellsBeforeMove / safeCellsBeforeMove;
+            const houseEdge = 0.98;
+
+            state.multiplier = state.multiplier * rawMultiplierIncrease * houseEdge;
+        }
+
+        function init() {
+            loadState();
+            
+            if (state.lightTheme) {
+                document.body.classList.add('light-theme');
+                el.themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                document.getElementById('theme-switch').checked = true;
+            }
+            
+            if (!state.dynamicIslandEnabled) {
+                el.dynamicIslandContainer.classList.add('hidden');
+            }
+            
+            if (!state.soundEnabled) {
+                audio.enabled = false;
+                document.getElementById('sound-toggle').checked = false;
+            } else {
+                document.getElementById('sound-toggle').checked = true;
+            }
+            
+            document.getElementById('island-toggle').checked = state.dynamicIslandEnabled;
+            
+            updateBalance();
+            renderMinesControl();
+            drawGrid();
+            loadAvatar();
+            updateStats();
+            renderHistory('all');
+            updateDailyBonusTimer();
+            
+            setCurrency(state.currency);
+            
+            document.getElementById('avatar-upload').addEventListener('change', uploadAvatar);
+        }
+
+        function setSize(size) {
+            if(state.isPlaying) return;
+            state.gridSize = size;
+            
+            document.querySelectorAll('.segment-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.includes(size + 'x'));
+            });
+
+            const maxMines = (size * size) - 1;
+            if (state.minesCount >= maxMines) state.minesCount = 1;
+            
+            renderMinesControl();
+            drawGrid();
+        }
+
+        function setMines(count) {
+            if(state.isPlaying) return;
+            state.minesCount = count;
+            renderMinesControl();
+        }
+
+        function renderMinesControl() {
+            const opts = state.gridSize === 3 
+                ? [1, 2, 3, 5, 8] 
+                : [1, 3, 5, 10, 24];
+                
+            let html = '';
+            opts.forEach(num => {
+                const active = state.minesCount === num ? 'active' : '';
+                html += `<button class="segment-btn ${active}" onclick="setMines(${num})">${num}</button>`;
+            });
+            el.minesControl.innerHTML = html;
+        }
+
+        function drawGrid() {
+            el.grid.innerHTML = '';
+            el.grid.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
+            
+            const totalCells = state.gridSize * state.gridSize;
+            for(let i = 0; i < totalCells; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.id = i;
+                
+                const content = document.createElement('i');
+                content.className = 'cell-content';
+                cell.appendChild(content);
+                
+                cell.onclick = () => handleCellClick(i);
+                el.grid.appendChild(cell);
+            }
+        }
+
+        function adjustBet(action) {
+            if(state.isPlaying) return;
+            
+            let currentBalance = state.currency === 'gold' ? state.balance : state.silverBalance;
+            let current = parseInt(el.betInput.value);
+            
+            switch(action) {
+                case 'min': current = 5; break;
+                case 'half': current = Math.max(5, Math.floor(current / 2)); break;
+                case 'double': current = Math.min(currentBalance, current * 2); break;
+                case 'max': current = currentBalance; break;
+                case 'check': 
+                    if (current > currentBalance) current = currentBalance;
+                    break;
+            }
+            
+            if (current > currentBalance) current = currentBalance;
+            if (current < 5) current = 5;
+            state.bet = current;
+            el.betInput.value = current;
+        }
+
+        function startGame() {
+            let currentBalance = state.currency === 'gold' ? state.balance : state.silverBalance;
+            
+            if(currentBalance < state.bet) {
+                tg.showAlert(`Недостаточно ${state.currency === 'gold' ? 'золота' : 'серебра'}!`);
+                return;
+            }
+
+            if(state.currency === 'gold') {
+                state.balance -= state.bet;
+            } else {
+                state.silverBalance -= state.bet;
+            }
+            updateBalance();
+            
+            state.isPlaying = true;
+            state.gameOver = false;
+            state.openedCells = 0;
+            state.multiplier = 1.0;
+            
+            const totalCells = state.gridSize * state.gridSize;
+            const allPositions = Array.from({length: totalCells}, (_, i) => i);
+            const shuffled = secureShuffle(allPositions);
+            state.minesLocations = shuffled.slice(0, state.minesCount);
+            
+            drawGrid();
+
+            el.mainBtn.style.display = 'none';
+            el.cashoutBtn.style.display = 'block';
+            el.cashoutBtn.innerHTML = `ИГРА ИДЕТ...`;
+            el.cashoutBtn.disabled = true;
+            el.cashoutBtn.style.opacity = '0.7';
+            
+            el.multBadge.classList.add('visible');
+            el.multBadge.textContent = 'x1.00';
+            
+            document.querySelectorAll('.segment-btn').forEach(b => b.disabled = true);
+            document.querySelectorAll('.currency-btn').forEach(b => b.disabled = true);
+        }
+
+        function handleCellClick(id) {
+            if(!state.isPlaying || state.gameOver) return;
+            
+            const cell = el.grid.children[id];
+            if(cell.classList.contains('revealed')) return;
+            
+            audio.init();
+            
+            cell.classList.add('revealed');
+            
+            if(state.minesLocations.includes(id)) {
+                cell.classList.add('mine');
+                cell.querySelector('.cell-content').className = 'cell-content fas fa-bomb';
+                tg.HapticFeedback.notificationOccurred('error');
+                audio.playMine();
+                
+                showIsland('lose', state.bet, state.currency);
+                
+                endGame(false);
+            } else {
+                cell.classList.add('diamond');
+                cell.querySelector('.cell-content').className = 'cell-content fas fa-gem';
+                tg.HapticFeedback.impactOccurred('medium');
+                audio.playDiamond();
+                
+                state.openedCells++;
+                calculateNewMultiplier();
+                
+                const currentWin = Math.floor(state.bet * state.multiplier);
+                
+                el.cashoutBtn.disabled = false;
+                el.cashoutBtn.style.opacity = '1';
+                el.cashoutBtn.innerHTML = `ЗАБРАТЬ <i class="fas fa-coins"></i> ${currentWin}`;
+                
+                el.multBadge.textContent = `x${state.multiplier.toFixed(2)}`;
+                
+                const totalSafeCells = (state.gridSize * state.gridSize) - state.minesCount;
+                if(state.openedCells === totalSafeCells) {
+                    cashout();
+                }
+            }
+        }
+
+        function cashout() {
+            if(!state.isPlaying) return;
+            
+            const winAmount = Math.floor(state.bet * state.multiplier);
+            
+            if(state.currency === 'gold') {
+                state.balance += winAmount;
+            } else {
+                state.silverBalance += winAmount;
+            }
+            updateBalance();
+            
+            state.totalGames++;
+            state.totalWins++;
+            state.totalWinAmount += winAmount;
+            
+            addGameHistory('win', winAmount, state.currency);
+            
+            tg.HapticFeedback.notificationOccurred('success');
+            audio.playWin();
+            
+            showIsland('win', winAmount, state.currency);
+            
+            endGame(true);
+        }
+
+        function endGame(win) {
+            state.isPlaying = false;
+            state.gameOver = true;
+            
+            if (!win) {
+                state.totalGames++;
+                addGameHistory('loss', state.bet, state.currency);
+            }
+            
+            state.minesLocations.forEach(idx => {
+                const cell = el.grid.children[idx];
+                
+                if(!cell.classList.contains('revealed')) {
+                    cell.classList.add('revealed', 'mine');
+                    cell.querySelector('.cell-content').className = 'cell-content fas fa-bomb';
+                    cell.querySelector('.cell-content').style.opacity = '0.5';
+                } else if (!win && cell.classList.contains('mine')) {
+                    cell.style.background = 'rgba(239, 68, 68, 0.5)';
+                }
+            });
+
+            const totalCells = state.gridSize * state.gridSize;
+            for(let i=0; i<totalCells; i++) {
+                if(!state.minesLocations.includes(i)) {
+                    const cell = el.grid.children[i];
+                    if(!cell.classList.contains('revealed')) {
+                        cell.classList.add('revealed');
+                        cell.querySelector('.cell-content').className = 'cell-content fas fa-gem';
+                        cell.querySelector('.cell-content').style.opacity = '0.2';
+                    }
+                }
+            }
+
+            setTimeout(() => {
+                el.mainBtn.style.display = 'block';
+                el.cashoutBtn.style.display = 'none';
+                el.multBadge.classList.remove('visible');
+                document.querySelectorAll('.segment-btn').forEach(b => b.disabled = false);
+                document.querySelectorAll('.currency-btn').forEach(b => b.disabled = false);
+                
+                updateStats();
+                saveState();
+            }, 1500);
+        }
+
+        function openDepositModal() {
+            document.getElementById('deposit-modal').classList.add('active');
+            document.getElementById('withdraw-balance').textContent = state.balance;
+        }
+
+        function closeDepositModal() {
+            document.getElementById('deposit-modal').classList.remove('active');
+        }
+
+        function openProfileModal() {
+            document.getElementById('profile-modal').classList.add('active');
+            updateStats();
+            renderHistory('all');
+            updateDailyBonusTimer();
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal').classList.remove('active');
+        }
+
+        function switchDepositTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('stars-tab').style.display = tab === 'stars' ? 'block' : 'none';
+            document.getElementById('exchange-tab').style.display = tab === 'exchange' ? 'block' : 'none';
+            document.getElementById('withdraw-tab').style.display = tab === 'withdraw' ? 'block' : 'none';
+            document.getElementById('gifts-tab').style.display = tab === 'gifts' ? 'block' : 'none';
+            document.getElementById('promo-tab').style.display = tab === 'promo' ? 'block' : 'none';
+        }
+
+        function buyStars(starsAmount) {
+            tg.showConfirm(`Купить ${starsAmount} Stars за ${starsAmount} монет?`, (confirm) => {
+                if(confirm) {
+                    state.balance += starsAmount;
+                    state.totalDeposits += starsAmount; // добавляем к общей сумме депозитов
+                    updateBalance();
+                    updateStats();
+                    tg.showAlert(`Успешно! Начислено ${starsAmount} монет.`);
+                    tg.HapticFeedback.notificationOccurred('success');
+                    audio.playWin();
+                    
+                    // Отправляем данные в бота
+                    sendToBot({
+                        type: 'deposit',
+                        amount: starsAmount
+                    });
+                }
+            });
+        }
+
+        function exchangeSilver() {
+            if (state.silverBalance < 100) {
+                tg.showAlert('Недостаточно серебра! Нужно минимум 100.');
+                return;
+            }
+            
+            tg.showConfirm('Обменять 100 серебра на 5 золотых монет?', (confirmed) => {
+                if (confirmed) {
+                    state.silverBalance -= 100;
+                    state.balance += 5;
+                    updateBalance();
+                    tg.showAlert('✅ Обменено! 5 золотых монет начислены.');
+                    tg.HapticFeedback.notificationOccurred('success');
+                    audio.playWin();
+                }
+            });
+        }
+
+        function withdrawCoins() {
+            const amount = parseInt(document.getElementById('withdraw-amount').value);
+            
+            if (!amount || amount <= 0) {
+                tg.showAlert('Введите корректную сумму');
+                return;
+            }
+            
+            if (amount > state.balance) {
+                tg.showAlert('Недостаточно монет на балансе');
+                return;
+            }
+            
+            if (amount < 100) {
+                tg.showAlert('Минимальная сумма вывода: 100 монет');
+                return;
+            }
+            
+            // Проверка минимального депозита 20 звезд
+            if (state.totalDeposits < 20) {
+                tg.showAlert('Для вывода необходимо сделать минимальный депозит в 20 звёзд');
+                return;
+            }
+            
+            tg.showConfirm(`Вывести ${amount} монет?`, (confirm) => {
+                if(confirm) {
+                    state.balance -= amount;
+                    updateBalance();
+                    tg.showAlert(`Заявка на вывод ${amount} монет создана!`);
+                    tg.HapticFeedback.notificationOccurred('success');
+                    document.getElementById('withdraw-amount').value = '';
+                    
+                    // Отправляем данные в бота
+                    sendToBot({
+                        type: 'withdraw',
+                        amount: amount
+                    });
+                }
+            });
+        }
+
+        function buyGift(type, cost) {
+            if (state.balance < cost) {
+                tg.showAlert('Недостаточно монет!');
+                return;
+            }
+            
+            tg.showConfirm(`Купить подарок за ${cost} монет?`, (confirm) => {
+                if(confirm) {
+                    state.balance -= cost;
+                    updateBalance();
+                    tg.showAlert('Подарок куплен!');
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            });
+        }
+
+        function claimDailyBonus() {
+            const now = Date.now();
+            const dayInMs = 24 * 60 * 60 * 1000;
+            
+            if (now - state.lastDailyBonus < dayInMs) {
+                const timeLeft = dayInMs - (now - state.lastDailyBonus);
+                const hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
+                const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+                tg.showAlert(`Бонус уже получен! Следующий через ${hoursLeft}ч ${minutesLeft}м`);
+                return;
+            }
+            
+            state.silverBalance += 10; // 10 серебра ежедневно
+            state.lastDailyBonus = now;
+            updateBalance();
+            
+            tg.showAlert('Получено 10 серебра! 🎁');
+            tg.HapticFeedback.notificationOccurred('success');
+            audio.playWin();
+            updateDailyBonusTimer();
+            saveState();
+        }
+
+        function updateDailyBonusTimer() {
+            const now = Date.now();
+            const dayInMs = 24 * 60 * 60 * 1000;
+            const timeSinceLast = now - state.lastDailyBonus;
+            
+            if (timeSinceLast >= dayInMs) {
+                el.dailyTimer.textContent = 'Доступно сейчас! 🎁';
+                el.dailyTimer.style.color = 'var(--success)';
+            } else {
+                const timeLeft = dayInMs - timeSinceLast;
+                const hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
+                const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+                el.dailyTimer.textContent = `Следующий бонус через ${hoursLeft}ч ${minutesLeft}м`;
+                el.dailyTimer.style.color = 'var(--text-secondary)';
+            }
+        }
+
+        function activatePromo() {
+            const promoCode = document.getElementById('promo-code').value.trim().toLowerCase();
+            const promoStatus = document.getElementById('promo-status');
+            
+            if (!promoCode) {
+                promoStatus.textContent = 'Введите промокод';
+                promoStatus.style.color = 'var(--danger)';
+                return;
+            }
+            
+            if (state.usedPromoCodes.includes(promoCode)) {
+                promoStatus.textContent = 'Промокод уже использован';
+                promoStatus.style.color = 'var(--danger)';
+                return;
+            }
+            
+            if (promoCode === 'xyi') {
+                state.balance += 1000;
+                state.usedPromoCodes.push(promoCode);
+                updateBalance();
+                promoStatus.textContent = '✅ Промокод активирован! +1000 золота';
+                promoStatus.style.color = 'var(--success)';
+                tg.showAlert('Промокод активирован! +1000 золота');
+                tg.HapticFeedback.notificationOccurred('success');
+                audio.playWin();
+                saveState();
+            } else {
+                promoStatus.textContent = 'Неверный промокод';
+                promoStatus.style.color = 'var(--danger)';
+            }
+        }
+
+        function sendToBot(data) {
+            if (tg.initDataUnsafe?.user?.id) {
+                tg.sendData(JSON.stringify({
+                    type: data.type,
+                    userId: tg.initDataUnsafe.user.id,
+                    username: tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name,
+                    amount: data.amount,
+                    timestamp: Date.now()
+                }));
+            }
+        }
+
+        init();
+        setInterval(updateDailyBonusTimer, 60000);
+    </script>
+</body>
+</html>
